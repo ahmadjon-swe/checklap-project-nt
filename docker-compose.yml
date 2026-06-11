@@ -4,7 +4,7 @@ services:
     container_name: checklab-postgres-1
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-quizdb}
+      POSTGRES_DB: ${DB_NAME:-checklabdb}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:

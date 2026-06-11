@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
+import Image from 'next/image';
 import { CheckCircle2, Mail } from 'lucide-react';
 import api from '../../../lib/api';
 import { useT } from '../../../lib/i18n';
@@ -86,8 +87,8 @@ export default function RegisterPage() {
 
         {/* Logo */}
         <div className="relative flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/40">
-            <span className="text-white text-sm font-bold tracking-tight">Q</span>
+          <div className="w-9 h-9 rounded-xl overflow-hidden bg-white shadow-lg shadow-white/20 flex items-center justify-center flex-shrink-0">
+            <Image src="/logo-icon.png" alt="CheckLab" width={36} height={36} className="w-full h-full object-contain" />
           </div>
           <span className="text-white text-lg font-bold tracking-tight">CheckLab</span>
         </div>
@@ -121,8 +122,8 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm">
           {/* Mobile-only logo */}
           <div className="flex items-center gap-2.5 mb-10 lg:hidden">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
-              <span className="text-white text-xs font-bold">Q</span>
+            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white shadow-md flex items-center justify-center flex-shrink-0">
+              <Image src="/logo-icon.png" alt="CheckLab" width={32} height={32} className="w-full h-full object-contain" />
             </div>
             <span className="text-slate-900 dark:text-slate-100 text-base font-bold">CheckLab</span>
           </div>

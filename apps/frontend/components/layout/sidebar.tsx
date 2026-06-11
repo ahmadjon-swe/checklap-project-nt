@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
@@ -78,8 +79,8 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       {/* Logo */}
       <div className="px-5 py-5 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 bg-gradient-to-br transition-all duration-500 ${tierLogoClass[tier]}`}>
-            <span className="text-white text-xs font-bold tracking-tight">Q</span>
+          <div className="w-8 h-8 rounded-xl overflow-hidden flex-shrink-0 bg-white shadow-lg shadow-white/10 flex items-center justify-center">
+            <Image src="/logo-icon.png" alt="CheckLab" width={32} height={32} className="w-full h-full object-contain" />
           </div>
           <span className="text-white text-base font-bold tracking-tight">CheckLab</span>
           {tier === 'pro' && (

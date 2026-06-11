@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { KeyRound } from 'lucide-react';
 import api from '../../../lib/api';
 import { useT } from '../../../lib/i18n';
@@ -58,8 +59,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex items-center gap-2.5 mb-10">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
-            <KeyRound size={16} className="text-white" />
+          <div className="w-9 h-9 rounded-xl overflow-hidden bg-white shadow-md flex items-center justify-center flex-shrink-0">
+            <Image src="/logo-icon.png" alt="CheckLab" width={36} height={36} className="w-full h-full object-contain" />
           </div>
           <span className="text-slate-900 dark:text-slate-100 text-lg font-bold">CheckLab</span>
         </div>

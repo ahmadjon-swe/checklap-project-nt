@@ -1,0 +1,23 @@
+# Host-level Caddy reverse proxy — lives on the VPS at /etc/caddy/Caddyfile.
+# Caddy auto-provisions + renews Let's Encrypt SSL for each domain. No certbot.
+#
+# Add one block per project. CheckLab routes /api/* to the backend and
+# everything else to the Next.js frontend (same origin, so the frontend's
+# relative "/api" calls just work).
+
+yourdomain.com {
+	# API → NestJS backend (published on loopback by docker-compose.prod.yml)
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3101
+	}
+
+	# Everything else → Next.js frontend
+	handle {
+		reverse_proxy 127.0.0.1:3100
+	}
+}
+
+# ── Next project later, same file ───────────────────────────────
+# anotherapp.com {
+# 	reverse_proxy 127.0.0.1:3200
+# }

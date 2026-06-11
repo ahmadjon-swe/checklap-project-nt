@@ -1,0 +1,20 @@
+# Production override for a SHARED VPS with a host-level reverse proxy (Caddy).
+#
+# CheckLab does NOT own ports 80/443 here — a host proxy does. We only publish
+# the backend and frontend on loopback host ports so the host proxy can reach
+# them; nothing is exposed to the public internet directly.
+#
+# Bring it up WITHOUT the bundled nginx service:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#     up -d --build postgres backend frontend
+#
+# Each additional project on this server picks DIFFERENT host ports (3102/3103…)
+# and its own Caddy site block.
+services:
+  backend:
+    ports:
+      - "127.0.0.1:3101:3001"
+
+  frontend:
+    ports:
+      - "127.0.0.1:3100:3000"

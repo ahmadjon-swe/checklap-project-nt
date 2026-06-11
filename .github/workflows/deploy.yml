@@ -69,7 +69,7 @@ jobs:
             sleep 5
             docker exec checklab-backend-1 npm run migration:run:prod
             sleep 3
-            curl -f http://localhost:3001/api/health || exit 1
+            curl -f http://localhost/api/health || exit 1
             echo "✅ Deployment successful"
 
       - name: Notify on failure

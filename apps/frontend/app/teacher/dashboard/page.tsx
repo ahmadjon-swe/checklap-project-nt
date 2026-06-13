@@ -28,8 +28,8 @@ export default function TeacherDashboard() {
       label: t.teacherDash.totalTests,
       value: stats.totalTests ?? '—',
       icon: FileText,
-      gradient: tier === 'pro' ? 'from-amber-400 to-orange-500' : tier === 'enterprise' ? 'from-violet-500 to-blue-500' : 'from-indigo-500 to-indigo-600',
-      glow: tier === 'pro' ? 'shadow-amber-500/25' : tier === 'enterprise' ? 'shadow-violet-500/25' : 'shadow-indigo-500/25',
+      gradient: tier === 'pro' ? 'from-amber-400 to-orange-500' : tier === 'enterprise' ? 'from-rose-900 via-red-700 to-amber-400' : 'from-indigo-500 to-indigo-600',
+      glow: tier === 'pro' ? 'shadow-amber-500/25' : tier === 'enterprise' ? 'shadow-rose-900/40' : 'shadow-indigo-500/25',
     },
     {
       label: t.teacherDash.published,

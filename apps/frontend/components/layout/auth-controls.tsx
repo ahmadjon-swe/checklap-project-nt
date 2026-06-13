@@ -65,7 +65,7 @@ export function AuthControls() {
         className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/60 backdrop-blur border border-slate-200 dark:border-slate-700 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 hover:scale-110 active:scale-95"
       >
         {theme === 'dark'
-          ? <Sun size={15} className="text-amber-400" />
+          ? <Sun size={15} />
           : <Moon size={15} />
         }
       </button>

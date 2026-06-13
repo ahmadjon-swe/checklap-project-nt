@@ -44,14 +44,14 @@ export default function StudentDashboard() {
       label: t.studentDash.testsTaken,
       value: results.length,
       icon: Trophy,
-      gradient: tier === 'pro' ? 'from-amber-400 to-orange-500' : tier === 'enterprise' ? 'from-violet-400 to-blue-500' : 'from-amber-400 to-orange-500',
-      glow: tier === 'enterprise' ? 'shadow-violet-500/25' : 'shadow-amber-500/25',
+      gradient: tier === 'pro' ? 'from-amber-400 to-orange-500' : tier === 'enterprise' ? 'from-rose-900 via-red-700 to-amber-400' : 'from-amber-400 to-orange-500',
+      glow: tier === 'enterprise' ? 'shadow-rose-900/40' : 'shadow-amber-500/25',
     },
     {
       label: t.studentDash.avgScore,
       value: avgScore ? `${avgScore}%` : '—',
       icon: Target,
-      gradient: tier === 'pro' ? 'from-orange-400 to-rose-500' : tier === 'enterprise' ? 'from-indigo-400 to-violet-500' : 'from-indigo-500 to-violet-600',
+      gradient: tier === 'pro' ? 'from-orange-400 to-rose-500' : tier === 'enterprise' ? 'from-rose-900 via-red-700 to-amber-400' : 'from-indigo-500 to-violet-600',
       glow: 'shadow-indigo-500/25',
     },
     {

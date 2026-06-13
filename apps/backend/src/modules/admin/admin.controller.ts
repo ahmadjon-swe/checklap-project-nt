@@ -22,7 +22,7 @@ export class AdminController {
   constructor(private readonly service: AdminService) {}
 
   @Get('stats')
-  @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Roles(UserRole.ADMIN, UserRole.MODERATOR, UserRole.SUPPORT)
   @ApiOperation({ summary: 'Platform-wide statistics' })
   getStats() {
     return this.service.getPlatformStats();

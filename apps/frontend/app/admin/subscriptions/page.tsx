@@ -87,7 +87,7 @@ function PlanEditor({ plan }: { plan: Plan }) {
   const tierColor: Record<string, string> = {
     free: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
     pro: 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300',
-    enterprise: 'bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300',
+    enterprise: 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300',
   };
 
   const tierBadge = tierColor[plan.name.split('_')[0]] ?? tierColor.free;

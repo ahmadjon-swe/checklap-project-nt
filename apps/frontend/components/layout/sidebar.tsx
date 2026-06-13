@@ -90,9 +90,9 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
             </div>
           )}
           {tier === 'enterprise' && (
-            <div className="ml-auto flex items-center gap-1 bg-violet-500/10 border border-violet-400/20 rounded-full px-2 py-0.5">
-              <Gem size={10} className="text-violet-400" />
-              <span className="text-[10px] font-bold text-violet-300">ENT</span>
+            <div className="ml-auto flex items-center gap-1 bg-gradient-to-r from-rose-900/30 via-red-700/20 to-amber-500/20 border border-rose-700/30 rounded-full px-2 py-0.5">
+              <Gem size={10} className="text-amber-400" />
+              <span className="text-[10px] font-bold text-rose-300">ENT</span>
             </div>
           )}
         </div>

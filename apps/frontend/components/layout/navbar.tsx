@@ -119,7 +119,7 @@ export function Navbar() {
         className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all duration-200 hover:scale-110 active:scale-95"
       >
         {theme === 'dark'
-          ? <Sun size={15} className="text-amber-400" />
+          ? <Sun size={15} />
           : <Moon size={15} />
         }
       </button>
@@ -157,7 +157,7 @@ export function Navbar() {
                 >
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
                     t === 'pro' ? 'bg-gradient-to-br from-amber-400 to-orange-500'
-                    : t === 'enterprise' ? 'bg-gradient-to-br from-violet-500 to-blue-400'
+                    : t === 'enterprise' ? 'bg-gradient-to-br from-rose-900 via-red-700 to-amber-400'
                     : 'bg-slate-200 dark:bg-slate-700'
                   }`}>
                     <Icon size={12} className="text-white" />

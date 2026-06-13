@@ -34,7 +34,7 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const t = useT();
-  const [devOpen, setDevOpen] = useState(isDev);
+  const [devOpen, setDevOpen] = useState(false);
   const [twoFactorEmail, setTwoFactorEmail] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState('');
   const [otpSubmitting, setOtpSubmitting] = useState(false);

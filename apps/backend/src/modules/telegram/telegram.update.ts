@@ -231,8 +231,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     try {
       await ctx.editMessageText(text, extra);
     } catch {
-      await this.editOrReply(ctx, text, extra);
+      await ctx.reply(text, extra);
     }
+  }
+
+  private async safeCbAnswer(ctx: Context, text?: string) {
+    try {
+      await (ctx as any).answerCbQuery(text);
+    } catch { /* callback query expired — ignore */ }
   }
 
   // ── Lifecycle ────────────────────────────────────────────────────────────────
@@ -459,7 +465,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('menu')
   async actionMenu(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.getLinkedUser(ctx);
     if (!user) {
       await this.onStart(ctx);
@@ -471,13 +477,13 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('action_me')
   async actionMe(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     await this.onMe(ctx);
   }
 
   @Action('action_link_help')
   async actionLinkHelp(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     await this.editOrReply(ctx, 
       '1. Open CheckLab → <b>Profile → Connect Telegram</b>\n' +
         '2. Copy your link token\n' +
@@ -488,7 +494,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('action_unlink')
   async actionUnlink(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     await this.editOrReply(ctx, '⚠️ Unlink your Telegram from CheckLab?', {
       ...Markup.inlineKeyboard([
         [
@@ -501,7 +507,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('action_unlink_confirm')
   async actionUnlinkConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const telegramId = String(ctx.from?.id);
     const user = await this.usersRepo.findOne({ where: { telegramId } });
     if (!user) {
@@ -522,7 +528,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('t_list')
   async actionTList(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     await this.showTeacherTests(ctx, user);
@@ -530,7 +536,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('t_new')
   async actionTNew(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'creating_test_name' });
@@ -542,7 +548,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_view:(\d+)$/)
   async actionTView(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -558,7 +564,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_pub:(\d+)$/)
   async actionTPub(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -586,7 +592,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_del:(\d+)$/)
   async actionTDel(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const idx = parseInt((ctx as any).match[1], 10);
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
@@ -607,7 +613,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_del_c:(\d+)$/)
   async actionTDelConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -632,7 +638,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_qs:(\d+)$/)
   async actionTQuestions(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -647,7 +653,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_addq:(\d+)$/)
   async actionTAddQuestion(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -675,7 +681,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_ag:(\d+)$/)
   async actionTAssignGroups(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -712,7 +718,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^tg_c:(\d+):(\d+)$/)
   async actionTAssignGroupConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const testIdx = parseInt((ctx as any).match[1], 10);
@@ -745,7 +751,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^t_res:(\d+)$/)
   async actionTResults(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -803,7 +809,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('g_list')
   async actionGList(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     await this.showTeacherGroups(ctx, user);
@@ -811,7 +817,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('g_new')
   async actionGNew(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'creating_group_name' });
@@ -823,7 +829,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_view:(\d+)$/)
   async actionGView(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -839,7 +845,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_mem:(\d+)$/)
   async actionGMembers(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -892,7 +898,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_inv:(\d+)$/)
   async actionGInvite(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -916,7 +922,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_regen:(\d+)$/)
   async actionGRegen(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -945,7 +951,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_del:(\d+)$/)
   async actionGDel(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const idx = parseInt((ctx as any).match[1], 10);
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
@@ -966,7 +972,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_del_c:(\d+)$/)
   async actionGDelConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -991,7 +997,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^g_kick:(\d+):(\d+)$/)
   async actionGKick(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const groupIdx = parseInt((ctx as any).match[1], 10);
@@ -1030,7 +1036,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('s_tests')
   async actionSTests(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     await this.showStudentTests(ctx, user);
@@ -1038,7 +1044,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^s_start:(\d+)$/)
   async actionSStart(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -1077,7 +1083,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^sa:(\d+)$/)
   async actionSAnswer(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery('Answer saved ✓');
+    await this.safeCbAnswer(ctx, 'Answer saved ✓');
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const chatId = ctx.chat!.id;
@@ -1118,7 +1124,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^sq:(\d+)$/)
   async actionSSkipToQuestion(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const chatId = ctx.chat!.id;
@@ -1136,7 +1142,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('s_submit')
   async actionSSubmit(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const chatId = ctx.chat!.id;
@@ -1147,7 +1153,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('s_submit_c')
   async actionSSubmitConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery('Submitting…');
+    await this.safeCbAnswer(ctx, 'Submitting…');
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const chatId = ctx.chat!.id;
@@ -1201,7 +1207,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('s_groups')
   async actionSGroups(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     await this.showStudentGroups(ctx, user);
@@ -1209,7 +1215,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('s_join')
   async actionSJoin(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'joining_group' });
@@ -1226,7 +1232,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^s_leave:(\d+)$/)
   async actionSLeave(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -1249,7 +1255,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^s_leave_c:(\d+)$/)
   async actionSLeaveConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -1274,7 +1280,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('s_results')
   async actionSResults(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     await this.showResults(ctx, user);
@@ -1286,7 +1292,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('aq_done')
   async actionAqDone(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const chatId = ctx.chat!.id;
     const st = this.state(chatId);
     if (st.step !== 'adding_option' || !st.draftOptions?.length) {
@@ -1308,7 +1314,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^aq_correct:(\d+)$/)
   async actionAqCorrect(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const chatId = ctx.chat!.id;
@@ -2016,7 +2022,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('prof_menu')
   async actionProfMenu(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     await this.editOrReply(ctx, 
@@ -2039,7 +2045,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('prof_pw')
   async actionProfPw(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'changing_password_old' });
@@ -2053,7 +2059,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('prof_2fa')
   async actionProf2fa(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     try {
@@ -2081,7 +2087,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('ana_overview')
   async actionAnaOverview(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     try {
@@ -2109,7 +2115,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('ana_tests')
   async actionAnaTests(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const tests = (await this.testsService.findAll(
@@ -2134,7 +2140,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^ana_t:(\d+)$/)
   async actionAnaTest(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     const idx = parseInt((ctx as any).match[1], 10);
@@ -2173,7 +2179,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('adm_stats')
   async actionAdmStats(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2205,7 +2211,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('adm_users')
   async actionAdmUsers(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2241,7 +2247,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^adm_u:(\d+)$/)
   async actionAdmUser(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const admin = await this.requireLinkedUser(ctx);
     if (!admin || !this.isAdmin(admin)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2274,7 +2280,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^adm_toggle:(\d+)$/)
   async actionAdmToggle(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const admin = await this.requireLinkedUser(ctx);
     if (!admin || !this.isAdmin(admin)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2306,7 +2312,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('adm_usearch')
   async actionAdmUserSearch(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) return;
     this.setState(ctx.chat!.id, { step: 'admin_user_search' });
@@ -2319,7 +2325,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('adm_payments')
   async actionAdmPayments(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2362,7 +2368,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^adm_pay_c:(\d+)$/)
   async actionAdmPayConfirm(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const admin = await this.requireLinkedUser(ctx);
     if (!admin || !this.isAdmin(admin)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2393,7 +2399,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('adm_subs')
   async actionAdmSubs(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
       await this.editOrReply(ctx, '⛔ Access denied.');
@@ -2441,7 +2447,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action('adm_plans')
   async actionAdmPlans(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || user.role !== UserRole.ADMIN) {
       await this.editOrReply(ctx, '⛔ Admin only.');
@@ -2468,7 +2474,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Action(/^adm_plan:(\d+)$/)
   async actionAdmPlan(@Ctx() ctx: Context) {
-    await (ctx as any).answerCbQuery();
+    await this.safeCbAnswer(ctx);
     const user = await this.requireLinkedUser(ctx);
     if (!user || user.role !== UserRole.ADMIN) {
       await this.editOrReply(ctx, '⛔ Admin only.');

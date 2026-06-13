@@ -153,7 +153,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
   private async requireLinkedUser(ctx: Context): Promise<User | null> {
     const user = await this.getLinkedUser(ctx);
     if (!user) {
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         '⚠️ Your Telegram is not linked to any CheckLab account.\n\n' +
           'Use <code>/link TOKEN</code> to connect your account.',
         {
@@ -227,6 +227,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     return n != null ? Number(n).toFixed(1) : '–';
   }
 
+  private async editOrReply(ctx: Context, text: string, extra?: any) {
+    try {
+      await ctx.editMessageText(text, extra);
+    } catch {
+      await this.editOrReply(ctx, text, extra);
+    }
+  }
+
   // ── Lifecycle ────────────────────────────────────────────────────────────────
 
   private async startWebhook(username: string, webhookUrl: string) {
@@ -287,7 +295,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const user = await this.getLinkedUser(ctx);
 
     if (!user) {
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `👋 Hello, <b>${name}</b>!\n\n` +
           `I'm the <b>CheckLab</b> bot. I can do everything you can on the website.\n\n` +
           `First, link your account:\n` +
@@ -307,7 +315,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
     const roleLabel =
       user.role === UserRole.TEACHER ? '👨‍🏫 Teacher' : '🎓 Student';
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `👋 Welcome back, <b>${user.firstName}</b>!\n` +
         `${roleLabel} · ${user.email}\n\n` +
         `What would you like to do?`,
@@ -317,7 +325,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   @Command('help')
   async onHelp(@Ctx() ctx: Context) {
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `📚 <b>CheckLab Bot Commands</b>\n\n` +
         `/start — Main menu\n` +
         `/link TOKEN — Connect your account\n` +
@@ -336,11 +344,11 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const chatId = ctx.chat!.id;
     const st = this.state(chatId);
     if (st.step === 'idle') {
-      await ctx.reply('Nothing to cancel.');
+      await this.editOrReply(ctx, 'Nothing to cancel.');
       return;
     }
     this.resetState(chatId);
-    await ctx.reply('❌ Cancelled.', {
+    await this.editOrReply(ctx, '❌ Cancelled.', {
       ...Markup.inlineKeyboard([
         [Markup.button.callback('🏠 Main Menu', 'menu')],
       ]),
@@ -375,12 +383,12 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         from.username || '',
         String(ctx.chat?.id || from.id),
       );
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ <b>Linked!</b>\n\n📧 ${user.email}\n👤 ${user.firstName} ${user.lastName}\n\nWhat would you like to do?`,
         { parse_mode: 'HTML', ...this.mainMenu(user) },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to link. Try again.'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to link. Try again.'}`);
     }
   }
 
@@ -388,7 +396,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
   async onMe(@Ctx() ctx: Context) {
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `👤 <b>Your Account</b>\n\n📧 ${user.email}\n👤 ${user.firstName} ${user.lastName}\n🎓 Role: ${user.role}`,
       {
         parse_mode: 'HTML',
@@ -406,7 +414,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
   async onUnlink(@Ctx() ctx: Context) {
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
-    await ctx.reply('⚠️ Unlink your Telegram from CheckLab?', {
+    await this.editOrReply(ctx, '⚠️ Unlink your Telegram from CheckLab?', {
       ...Markup.inlineKeyboard([
         [
           Markup.button.callback('✅ Yes', 'action_unlink_confirm'),
@@ -458,7 +466,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       return;
     }
     this.resetState(ctx.chat!.id);
-    await ctx.reply('🏠 Main Menu:', { ...this.mainMenu(user) });
+    await this.editOrReply(ctx, '🏠 Main Menu:', { ...this.mainMenu(user) });
   }
 
   @Action('action_me')
@@ -470,7 +478,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
   @Action('action_link_help')
   async actionLinkHelp(@Ctx() ctx: Context) {
     await (ctx as any).answerCbQuery();
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       '1. Open CheckLab → <b>Profile → Connect Telegram</b>\n' +
         '2. Copy your link token\n' +
         '3. Send: <code>/link YOUR_TOKEN</code>',
@@ -481,7 +489,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
   @Action('action_unlink')
   async actionUnlink(@Ctx() ctx: Context) {
     await (ctx as any).answerCbQuery();
-    await ctx.reply('⚠️ Unlink your Telegram from CheckLab?', {
+    await this.editOrReply(ctx, '⚠️ Unlink your Telegram from CheckLab?', {
       ...Markup.inlineKeyboard([
         [
           Markup.button.callback('✅ Yes', 'action_unlink_confirm'),
@@ -497,7 +505,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const telegramId = String(ctx.from?.id);
     const user = await this.usersRepo.findOne({ where: { telegramId } });
     if (!user) {
-      await ctx.reply('No linked account.');
+      await this.editOrReply(ctx, 'No linked account.');
       return;
     }
     await this.usersRepo.update(user.id, {
@@ -505,7 +513,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       telegramUsername: null,
       telegramChatId: null,
     });
-    await ctx.reply('✅ Unlinked. Use /link TOKEN to reconnect.');
+    await this.editOrReply(ctx, '✅ Unlinked. Use /link TOKEN to reconnect.');
   }
 
   // ──────────────────────────────────────────────────────────────────────────────
@@ -526,7 +534,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'creating_test_name' });
-    await ctx.reply('📝 <b>New Test</b>\n\nEnter the test <b>title</b>:', {
+    await this.editOrReply(ctx, '📝 <b>New Test</b>\n\nEnter the test <b>title</b>:', {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([[Markup.button.callback('❌ Cancel', 'menu')]]),
     });
@@ -541,7 +549,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found. Try /tests again.');
+      await this.editOrReply(ctx, 'Test not found. Try /tests again.');
       return;
     }
     this.setState(ctx.chat!.id, { focusTestId: test.id });
@@ -557,12 +565,12 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
     try {
       const res = await this.testsService.publish(test.id, user.id);
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ <b>Test Published!</b>\n\n🔑 Access Code: <code>${res.accessCode}</code>\n\nStudents can use this code at ${this.frontendUrl}/t`,
         {
           parse_mode: 'HTML',
@@ -572,7 +580,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to publish'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to publish'}`);
     }
   }
 
@@ -583,10 +591,10 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
-    await ctx.reply(`🗑️ Delete <b>${test.title}</b>? This cannot be undone.`, {
+    await this.editOrReply(ctx, `🗑️ Delete <b>${test.title}</b>? This cannot be undone.`, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([
         [
@@ -606,19 +614,19 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
     try {
       await this.testsService.remove(test.id, user.id);
-      await ctx.reply(`✅ Test "<b>${test.title}</b>" deleted.`, {
+      await this.editOrReply(ctx, `✅ Test "<b>${test.title}</b>" deleted.`, {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('📋 My Tests', 't_list')],
         ]),
       });
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to delete'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to delete'}`);
     }
   }
 
@@ -631,7 +639,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
     await this.showQuestions(ctx, test, idx, user);
@@ -646,7 +654,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
     this.setState(ctx.chat!.id, {
@@ -654,7 +662,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       focusTestId: test.id,
       draftOptions: [],
     });
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `📝 <b>Add Question to "${test.title}"</b>\n\nEnter the <b>question text</b>:`,
       {
         parse_mode: 'HTML',
@@ -674,13 +682,13 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
 
     const groups = await this.groupsService.findAll(user.id, UserRole.TEACHER);
     if (!groups.length) {
-      await ctx.reply('You have no groups yet. Create a group first.', {
+      await this.editOrReply(ctx, 'You have no groups yet. Create a group first.', {
         ...Markup.inlineKeyboard([
           [Markup.button.callback('👥 Groups', 'g_list')],
         ]),
@@ -696,7 +704,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       Markup.button.callback(`${g.name}`, `tg_c:${idx}:${i}`),
     ]);
     buttons.push([Markup.button.callback('⬅️ Back', `t_view:${idx}`)]);
-    await ctx.reply(`👥 Assign a group to <b>${test.title}</b>:`, {
+    await this.editOrReply(ctx, `👥 Assign a group to <b>${test.title}</b>:`, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard(buttons),
     });
@@ -714,14 +722,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const test = tests[testIdx];
     const group = groups[groupIdx];
     if (!test || !group) {
-      await ctx.reply('Not found.');
+      await this.editOrReply(ctx, 'Not found.');
       return;
     }
     try {
       await this.testsService.assignGroups(test.id, user.id, {
         groupIds: [group.id],
       });
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ Group "<b>${group.name}</b>" assigned to "<b>${test.title}</b>"!`,
         {
           parse_mode: 'HTML',
@@ -731,7 +739,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to assign'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to assign'}`);
     }
   }
 
@@ -744,7 +752,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
     try {
@@ -753,7 +761,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         user.id,
       );
       if (!results.length) {
-        await ctx.reply(`📊 No results for "<b>${test.title}</b>" yet.`, {
+        await this.editOrReply(ctx, `📊 No results for "<b>${test.title}</b>" yet.`, {
           parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
             [Markup.button.callback('⬅️ Back', `t_view:${idx}`)],
@@ -774,7 +782,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           : 'Unknown';
         return `${i + 1}. ${emoji} <b>${name}</b> — ${pct}%`;
       });
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `📊 <b>Results: ${test.title}</b> (${results.length} total)\n\n` +
           lines.join('\n'),
         {
@@ -785,7 +793,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to load results'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to load results'}`);
     }
   }
 
@@ -807,7 +815,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'creating_group_name' });
-    await ctx.reply('👥 <b>New Group</b>\n\nEnter the group <b>name</b>:', {
+    await this.editOrReply(ctx, '👥 <b>New Group</b>\n\nEnter the group <b>name</b>:', {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([[Markup.button.callback('❌ Cancel', 'menu')]]),
     });
@@ -822,7 +830,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found. Try /groups again.');
+      await this.editOrReply(ctx, 'Group not found. Try /groups again.');
       return;
     }
     this.setState(ctx.chat!.id, { focusGroupId: group.id });
@@ -838,13 +846,13 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
     try {
       const members = await this.groupsService.getMembers(group.id, user.id);
       if (!members.length) {
-        await ctx.reply(`👥 <b>${group.name}</b> has no members yet.`, {
+        await this.editOrReply(ctx, `👥 <b>${group.name}</b> has no members yet.`, {
           parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
             [Markup.button.callback('⬅️ Back', `g_view:${idx}`)],
@@ -866,7 +874,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         ];
       });
       this.setState(ctx.chat!.id, { questions: members as any });
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `👥 <b>${group.name}</b> — ${members.length} member(s)\n\n` +
           lines.join('\n'),
         {
@@ -878,7 +886,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to load members'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to load members'}`);
     }
   }
 
@@ -891,10 +899,10 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `🔗 <b>Invite Code for "${group.name}"</b>\n\n<code>${group.inviteCode}</code>\n\nStudents can join with /joingroup or on the website.`,
       {
         parse_mode: 'HTML',
@@ -915,7 +923,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
     try {
@@ -924,14 +932,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         user.id,
       );
       group.inviteCode = res.inviteCode;
-      await ctx.reply(`✅ New invite code: <code>${res.inviteCode}</code>`, {
+      await this.editOrReply(ctx, `✅ New invite code: <code>${res.inviteCode}</code>`, {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('⬅️ Back', `g_view:${idx}`)],
         ]),
       });
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -942,10 +950,10 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
-    await ctx.reply(`🗑️ Delete group <b>${group.name}</b>?`, {
+    await this.editOrReply(ctx, `🗑️ Delete group <b>${group.name}</b>?`, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([
         [
@@ -965,19 +973,19 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
     try {
       await this.groupsService.remove(group.id, user.id);
-      await ctx.reply(`✅ Group "<b>${group.name}</b>" deleted.`, {
+      await this.editOrReply(ctx, `✅ Group "<b>${group.name}</b>" deleted.`, {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('👥 My Groups', 'g_list')],
         ]),
       });
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to delete'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to delete'}`);
     }
   }
 
@@ -993,7 +1001,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const group = groups[groupIdx];
     const member = members[memberIdx] as any;
     if (!group || !member) {
-      await ctx.reply('Not found.');
+      await this.editOrReply(ctx, 'Not found.');
       return;
     }
     try {
@@ -1002,7 +1010,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         user.id,
         member.student?.id || member.studentId,
       );
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ Removed <b>${member.student?.firstName || 'member'}</b> from ${group.name}.`,
         {
           parse_mode: 'HTML',
@@ -1012,7 +1020,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -1037,11 +1045,11 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found. Try /tests again.');
+      await this.editOrReply(ctx, 'Test not found. Try /tests again.');
       return;
     }
 
-    await ctx.reply(`⏳ Starting test "<b>${test.title}</b>"…`, {
+    await this.editOrReply(ctx, `⏳ Starting test "<b>${test.title}</b>"…`, {
       parse_mode: 'HTML',
     });
     try {
@@ -1061,7 +1069,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       });
       await this.showQuestion(ctx, data, 0);
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to start test.'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to start test.'}`);
     }
   }
 
@@ -1165,7 +1173,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             ? ' ✅ Passed'
             : ' ❌ Failed'
           : '';
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `${emoji} <b>Test Submitted!</b>${passed}\n\n` +
           `📊 Score: <b>${pct}%</b>\n` +
           `✅ Correct: ${result.correctCount}\n` +
@@ -1183,7 +1191,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to submit.'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to submit.'}`);
     }
   }
 
@@ -1205,7 +1213,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'joining_group' });
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       '🔗 <b>Join a Group</b>\n\nEnter the <b>invite code</b> given to you by your teacher:',
       {
         parse_mode: 'HTML',
@@ -1225,10 +1233,10 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
-    await ctx.reply(`Leave group <b>${group.name}</b>?`, {
+    await this.editOrReply(ctx, `Leave group <b>${group.name}</b>?`, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([
         [
@@ -1248,19 +1256,19 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const groups = this.state(ctx.chat!.id).groups || [];
     const group = groups[idx];
     if (!group) {
-      await ctx.reply('Group not found.');
+      await this.editOrReply(ctx, 'Group not found.');
       return;
     }
     try {
       await this.groupsService.leave(user.id, group.id);
-      await ctx.reply(`✅ Left group "<b>${group.name}</b>".`, {
+      await this.editOrReply(ctx, `✅ Left group "<b>${group.name}</b>".`, {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('👥 My Groups', 's_groups')],
         ]),
       });
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -1282,7 +1290,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const chatId = ctx.chat!.id;
     const st = this.state(chatId);
     if (st.step !== 'adding_option' || !st.draftOptions?.length) {
-      await ctx.reply('Add at least one option first.');
+      await this.editOrReply(ctx, 'Add at least one option first.');
       return;
     }
     this.setState(chatId, { step: 'picking_correct_option' });
@@ -1292,7 +1300,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         `aq_correct:${i}`,
       ),
     ]);
-    await ctx.reply('✅ Which option is the <b>correct answer</b>?', {
+    await this.editOrReply(ctx, '✅ Which option is the <b>correct answer</b>?', {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard(buttons),
     });
@@ -1326,7 +1334,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         draftOptions: [],
       });
       const testIdx = tests.findIndex((t) => t.id === st.focusTestId);
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ <b>Question added!</b>\n\n<i>${st.draftQuestionBody}</i>\n\n${options.map((o, i) => `${OPTION_LABELS[i]}) ${o.body}${o.isCorrect ? ' ✓' : ''}`).join('\n')}`,
         {
           parse_mode: 'HTML',
@@ -1345,7 +1353,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to save question'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to save question'}`);
       this.resetState(chatId);
     }
   }
@@ -1365,7 +1373,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
     const user = await this.getLinkedUser(ctx);
     if (!user) {
-      await ctx.reply('Please /link your account first.');
+      await this.editOrReply(ctx, 'Please /link your account first.');
       return;
     }
 
@@ -1376,7 +1384,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           step: 'creating_test_desc',
           draftTestName: text,
         });
-        await ctx.reply(
+        await this.editOrReply(ctx, 
           `📝 Title: <b>${text}</b>\n\nEnter a <b>description</b> (or send "-" to skip):`,
           {
             parse_mode: 'HTML',
@@ -1392,7 +1400,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           step: 'creating_test_time',
           draftTestDesc: text === '-' ? '' : text,
         });
-        await ctx.reply(
+        await this.editOrReply(ctx, 
           'Enter the <b>time limit in minutes</b> (or send "-" for no limit):',
           {
             parse_mode: 'HTML',
@@ -1406,7 +1414,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       case 'creating_test_time': {
         const minutes = text === '-' ? null : parseInt(text, 10);
         if (text !== '-' && (isNaN(minutes!) || minutes! <= 0)) {
-          await ctx.reply(
+          await this.editOrReply(ctx, 
             'Enter a valid number of minutes or "-" for no limit.',
           );
           break;
@@ -1424,7 +1432,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           );
           this.setState(chatId, { step: 'idle', tests: tests as Test[] });
           const idx = (tests as Test[]).findIndex((t) => t.id === test.id);
-          await ctx.reply(
+          await this.editOrReply(ctx, 
             `✅ <b>Test created!</b>\n\n📋 ${test.title}${minutes ? `\n⏱ ${minutes} minutes` : ''}`,
             {
               parse_mode: 'HTML',
@@ -1437,7 +1445,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             },
           );
         } catch (err: any) {
-          await ctx.reply(`❌ ${err?.message || 'Failed to create test'}`);
+          await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to create test'}`);
           this.resetState(chatId);
         }
         break;
@@ -1449,7 +1457,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           step: 'creating_group_desc',
           draftGroupName: text,
         });
-        await ctx.reply(
+        await this.editOrReply(ctx, 
           `👥 Name: <b>${text}</b>\n\nEnter a <b>description</b> (or "-" to skip):`,
           {
             parse_mode: 'HTML',
@@ -1471,7 +1479,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             UserRole.TEACHER,
           );
           this.setState(chatId, { step: 'idle', groups: groups as Group[] });
-          await ctx.reply(
+          await this.editOrReply(ctx, 
             `✅ <b>Group created!</b>\n\n👥 ${group.name}\n🔗 Invite code: <code>${group.inviteCode}</code>`,
             {
               parse_mode: 'HTML',
@@ -1481,7 +1489,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             },
           );
         } catch (err: any) {
-          await ctx.reply(`❌ ${err?.message || 'Failed to create group'}`);
+          await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to create group'}`);
           this.resetState(chatId);
         }
         break;
@@ -1494,7 +1502,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             inviteCode: text.toUpperCase(),
           });
           this.resetState(chatId);
-          await ctx.reply(`✅ Joined group <b>${group.name}</b>!`, {
+          await this.editOrReply(ctx, `✅ Joined group <b>${group.name}</b>!`, {
             parse_mode: 'HTML',
             ...Markup.inlineKeyboard([
               [
@@ -1504,7 +1512,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             ]),
           });
         } catch (err: any) {
-          await ctx.reply(`❌ ${err?.message || 'Invalid invite code.'}`);
+          await this.editOrReply(ctx, `❌ ${err?.message || 'Invalid invite code.'}`);
         }
         break;
       }
@@ -1516,7 +1524,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           draftQuestionBody: text,
           draftOptions: [],
         });
-        await ctx.reply(
+        await this.editOrReply(ctx, 
           `📝 Question: <i>${text}</i>\n\n` +
             'Now send each <b>answer option</b> as a separate message.\n' +
             'Send up to 6 options, then tap <b>Done</b>.',
@@ -1535,7 +1543,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         this.setState(chatId, { draftOptions: opts });
         const label = OPTION_LABELS[opts.length - 1];
         const isDone = opts.length >= 6;
-        await ctx.reply(
+        await this.editOrReply(ctx, 
           `${label}) ${text}\n\n${isDone ? '✅ Max 6 options reached.' : `Option ${opts.length} added. Send more or tap Done.`}`,
           {
             ...Markup.inlineKeyboard([
@@ -1552,7 +1560,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           step: 'changing_password_new',
           oldPassword: text,
         });
-        await ctx.reply('🔑 Enter your <b>new password</b>:', {
+        await this.editOrReply(ctx, '🔑 Enter your <b>new password</b>:', {
           parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
             [Markup.button.callback('❌ Cancel', 'prof_menu')],
@@ -1567,13 +1575,13 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             newPassword: text,
           });
           this.setState(chatId, { step: 'idle', oldPassword: undefined });
-          await ctx.reply('✅ Password changed successfully!', {
+          await this.editOrReply(ctx, '✅ Password changed successfully!', {
             ...Markup.inlineKeyboard([
               [Markup.button.callback('👤 Profile', 'prof_menu')],
             ]),
           });
         } catch (err: any) {
-          await ctx.reply(
+          await this.editOrReply(ctx, 
             `❌ ${err?.message || 'Failed. Check your current password.'}`,
           );
           this.resetState(chatId);
@@ -1585,7 +1593,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       case 'editing_plan_price': {
         const price = parseFloat(text.replace(',', '.'));
         if (isNaN(price) || price < 0) {
-          await ctx.reply('Enter a valid price (e.g. 12.99 or 0 for free).');
+          await this.editOrReply(ctx, 'Enter a valid price (e.g. 12.99 or 0 for free).');
           break;
         }
         try {
@@ -1594,7 +1602,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             { price },
           );
           this.resetState(chatId);
-          await ctx.reply(
+          await this.editOrReply(ctx, 
             `✅ <b>${updated!.name}</b> price updated to <b>$${Number(updated!.price).toFixed(2)}</b>!`,
             {
               parse_mode: 'HTML',
@@ -1604,7 +1612,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
             },
           );
         } catch (err: any) {
-          await ctx.reply(`❌ ${err?.message || 'Failed to update price'}`);
+          await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to update price'}`);
           this.resetState(chatId);
         }
         break;
@@ -1626,7 +1634,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           );
           this.setState(chatId, { step: 'idle', adminUsers: matches });
           if (!matches.length) {
-            await ctx.reply('No users found.', {
+            await this.editOrReply(ctx, 'No users found.', {
               ...Markup.inlineKeyboard([
                 [Markup.button.callback('⬅️ Back', 'adm_users')],
               ]),
@@ -1642,12 +1650,12 @@ export class TelegramUpdate implements OnApplicationBootstrap {
               ),
             ]);
           buttons.push([Markup.button.callback('⬅️ All Users', 'adm_users')]);
-          await ctx.reply(`🔍 Found <b>${matches.length}</b> user(s):`, {
+          await this.editOrReply(ctx, `🔍 Found <b>${matches.length}</b> user(s):`, {
             parse_mode: 'HTML',
             ...Markup.inlineKeyboard(buttons),
           });
         } catch (err: any) {
-          await ctx.reply(`❌ ${err?.message || 'Search failed'}`);
+          await this.editOrReply(ctx, `❌ ${err?.message || 'Search failed'}`);
           this.resetState(chatId);
         }
         break;
@@ -1655,7 +1663,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
       default:
         // Not in a conversation — show main menu
-        await ctx.reply('Use the menu to navigate:', {
+        await this.editOrReply(ctx, 'Use the menu to navigate:', {
           ...this.mainMenu(user),
         });
         break;
@@ -1674,7 +1682,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     this.setState(ctx.chat!.id, { tests });
 
     if (!tests.length) {
-      await ctx.reply('📋 You have no tests yet.', {
+      await this.editOrReply(ctx, '📋 You have no tests yet.', {
         ...Markup.inlineKeyboard([
           [
             Markup.button.callback('➕ Create Test', 't_new'),
@@ -1696,7 +1704,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       Markup.button.callback('🏠 Menu', 'menu'),
     ]);
 
-    await ctx.reply(`📋 <b>My Tests</b> (${tests.length})`, {
+    await this.editOrReply(ctx, `📋 <b>My Tests</b> (${tests.length})`, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard(buttons),
     });
@@ -1710,7 +1718,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       ? `⏱ ${test.timeLimitMinutes} min`
       : '⏱ No limit';
 
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `📋 <b>${test.title}</b>\n\n${status}\n${time}${test.description ? `\n\n${test.description}` : ''}`,
       {
         parse_mode: 'HTML',
@@ -1743,7 +1751,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
   ) {
     const questions = await this.questionsService.findAll(test.id);
     if (!questions.length) {
-      await ctx.reply(`📝 <b>${test.title}</b> has no questions yet.`, {
+      await this.editOrReply(ctx, `📝 <b>${test.title}</b> has no questions yet.`, {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('➕ Add Question', `t_addq:${idx}`)],
@@ -1758,7 +1766,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         `${i + 1}. ${q.body.slice(0, 60)}${q.body.length > 60 ? '…' : ''} (${q.options?.length || 0} opts)`,
     );
 
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `📝 <b>${test.title}</b> — ${questions.length} question(s)\n\n` +
         lines.join('\n'),
       {
@@ -1779,7 +1787,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     this.setState(ctx.chat!.id, { groups });
 
     if (!groups.length) {
-      await ctx.reply('👥 You have no groups yet.', {
+      await this.editOrReply(ctx, '👥 You have no groups yet.', {
         ...Markup.inlineKeyboard([
           [
             Markup.button.callback('➕ Create Group', 'g_new'),
@@ -1798,14 +1806,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       Markup.button.callback('🏠 Menu', 'menu'),
     ]);
 
-    await ctx.reply(`👥 <b>My Groups</b> (${groups.length})`, {
+    await this.editOrReply(ctx, `👥 <b>My Groups</b> (${groups.length})`, {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard(buttons),
     });
   }
 
   private async showGroupDetail(ctx: Context, group: Group, idx: number) {
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `👥 <b>${group.name}</b>\n\n🔗 Code: <code>${group.inviteCode}</code>${group.description ? `\n\n${group.description}` : ''}`,
       {
         parse_mode: 'HTML',
@@ -1831,7 +1839,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     this.setState(ctx.chat!.id, { tests });
 
     if (!tests.length) {
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         '📋 No tests available. Join a group first to see assigned tests.',
         {
           ...Markup.inlineKeyboard([
@@ -1853,7 +1861,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     ]);
     buttons.push([Markup.button.callback('🏠 Menu', 'menu')]);
 
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `📋 <b>Available Tests</b> (${tests.length})\n\nTap a test to start it:`,
       {
         parse_mode: 'HTML',
@@ -1870,7 +1878,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     this.setState(ctx.chat!.id, { groups });
 
     if (!groups.length) {
-      await ctx.reply('👥 You are not in any groups yet.', {
+      await this.editOrReply(ctx, '👥 You are not in any groups yet.', {
         ...Markup.inlineKeyboard([
           [
             Markup.button.callback('🔗 Join Group', 's_join'),
@@ -1889,7 +1897,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       Markup.button.callback('🏠 Menu', 'menu'),
     ]);
 
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `👥 <b>My Groups</b> (${groups.length})\n\nTap a group to leave it:`,
       {
         parse_mode: 'HTML',
@@ -1905,7 +1913,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       UserRole.STUDENT,
     );
     if (!results.length) {
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         '📭 No results yet. Complete a test to see your scores.',
         {
           ...Markup.inlineKeyboard([
@@ -1930,7 +1938,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       const passed = r.passed != null ? (r.passed ? ' ✅' : ' ❌') : '';
       return `${i + 1}. ${emoji} <b>${r.testTitle ?? 'Test'}</b>${passed}\n   ${pct}% · ${r.correctCount}✓ ${r.incorrectCount}✗ · ${date}`;
     });
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `📊 <b>Your Results</b> (last ${Math.min(results.length, 10)})\n\n` +
         lines.join('\n\n'),
       {
@@ -1978,7 +1986,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     if (idx < total - 1)
       navRow.push(Markup.button.callback('Next ➡️', `sq:${idx + 1}`));
 
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `❓ <b>Question ${idx + 1} / ${total}</b>\n\n${question.body}`,
       {
         parse_mode: 'HTML',
@@ -1989,7 +1997,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
 
   private async showSubmitPrompt(ctx: Context, st: ConvState) {
     const total = st.questionOrder?.length ?? 0;
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `✅ You've reached the end (${total} question${total !== 1 ? 's' : ''}).\n\nReady to submit?`,
       {
         ...Markup.inlineKeyboard([
@@ -2011,7 +2019,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `👤 <b>Profile</b>\n\n📧 ${user.email}\n👤 ${user.firstName} ${user.lastName}\n🎓 ${user.role}\n🔐 2FA: ${user.twoFactorEnabled ? '✅ On' : '❌ Off'}`,
       {
         parse_mode: 'HTML',
@@ -2035,7 +2043,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const user = await this.requireLinkedUser(ctx);
     if (!user) return;
     this.setState(ctx.chat!.id, { step: 'changing_password_old' });
-    await ctx.reply('🔑 Enter your <b>current password</b>:', {
+    await this.editOrReply(ctx, '🔑 Enter your <b>current password</b>:', {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard([
         [Markup.button.callback('❌ Cancel', 'prof_menu')],
@@ -2053,7 +2061,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         user.id,
         !user.twoFactorEnabled,
       );
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `🔐 Two-Factor Authentication is now <b>${res.twoFactorEnabled ? '✅ enabled' : '❌ disabled'}</b>.`,
         {
           parse_mode: 'HTML',
@@ -2063,7 +2071,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2078,7 +2086,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     if (!user) return;
     try {
       const ov = await this.analyticsService.getOverview(user.id);
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `📈 <b>Analytics Overview</b>\n\n` +
           `📋 Tests: <b>${ov.totalTests}</b> (${(ov as any).publishedTests ?? '–'} published)\n` +
           `🎯 Attempts: <b>${ov.totalAttempts}</b>\n` +
@@ -2095,7 +2103,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to load analytics'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to load analytics'}`);
     }
   }
 
@@ -2109,7 +2117,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       UserRole.TEACHER,
     )) as Test[];
     if (!tests.length) {
-      await ctx.reply('No tests yet.');
+      await this.editOrReply(ctx, 'No tests yet.');
       return;
     }
     this.setState(ctx.chat!.id, { tests });
@@ -2119,7 +2127,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         Markup.button.callback(`${t.title.slice(0, 42)}`, `ana_t:${i}`),
       ]);
     buttons.push([Markup.button.callback('⬅️ Overview', 'ana_overview')]);
-    await ctx.reply('📋 Select a test to view analytics:', {
+    await this.editOrReply(ctx, '📋 Select a test to view analytics:', {
       ...Markup.inlineKeyboard(buttons),
     });
   }
@@ -2133,7 +2141,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const tests = this.state(ctx.chat!.id).tests || [];
     const test = tests[idx];
     if (!test) {
-      await ctx.reply('Test not found.');
+      await this.editOrReply(ctx, 'Test not found.');
       return;
     }
     try {
@@ -2148,14 +2156,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         `✅ Pass Rate: <b>${stats.passRate != null ? this.fmt(stats.passRate) + '%' : '–'}</b>`,
         `📈 Highest: <b>${stats.highestScore != null ? this.fmt(stats.highestScore) + '%' : '–'}</b>`,
       ];
-      await ctx.reply(lines.join('\n'), {
+      await this.editOrReply(ctx, lines.join('\n'), {
         parse_mode: 'HTML',
         ...Markup.inlineKeyboard([
           [Markup.button.callback('⬅️ Back', 'ana_tests')],
         ]),
       });
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2168,12 +2176,12 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     try {
       const s = await this.adminService.getPlatformStats();
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `📊 <b>Platform Stats</b>\n\n` +
           `👥 Total Users: <b>${s.totalUsers}</b>\n` +
           `📋 Total Tests: <b>${s.totalTests}</b>\n` +
@@ -2191,7 +2199,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2200,7 +2208,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     try {
@@ -2221,13 +2229,13 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         Markup.button.callback('🔍 Search', 'adm_usearch'),
         Markup.button.callback('⬅️ Back', 'adm_stats'),
       ]);
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `👥 <b>Users</b> (${res.meta.total} total, showing ${users.length})\n\n` +
           lines.join('\n'),
         { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2236,17 +2244,17 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const admin = await this.requireLinkedUser(ctx);
     if (!admin || !this.isAdmin(admin)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     const idx = parseInt((ctx as any).match[1], 10);
     const users = this.state(ctx.chat!.id).adminUsers || [];
     const u = users[idx];
     if (!u) {
-      await ctx.reply('User not found.');
+      await this.editOrReply(ctx, 'User not found.');
       return;
     }
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `👤 <b>${u.firstName} ${u.lastName}</b>\n📧 ${u.email}\n🎓 ${u.role}\n` +
         `✅ Active: ${u.isActive ? 'Yes' : 'No'}\n📅 Joined: ${new Date(u.createdAt).toLocaleDateString()}`,
       {
@@ -2269,20 +2277,20 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const admin = await this.requireLinkedUser(ctx);
     if (!admin || !this.isAdmin(admin)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     const idx = parseInt((ctx as any).match[1], 10);
     const users = this.state(ctx.chat!.id).adminUsers || [];
     const u = users[idx];
     if (!u) {
-      await ctx.reply('User not found.');
+      await this.editOrReply(ctx, 'User not found.');
       return;
     }
     try {
       await this.adminService.updateUser(u.id, { isActive: !u.isActive });
       u.isActive = !u.isActive;
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ User <b>${u.firstName} ${u.lastName}</b> is now <b>${u.isActive ? 'active' : 'deactivated'}</b>.`,
         {
           parse_mode: 'HTML',
@@ -2292,7 +2300,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2302,7 +2310,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) return;
     this.setState(ctx.chat!.id, { step: 'admin_user_search' });
-    await ctx.reply('🔍 Enter a name or email to search:', {
+    await this.editOrReply(ctx, '🔍 Enter a name or email to search:', {
       ...Markup.inlineKeyboard([
         [Markup.button.callback('❌ Cancel', 'adm_users')],
       ]),
@@ -2314,7 +2322,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     try {
@@ -2324,7 +2332,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       });
       const payments: any[] = res.data;
       if (!payments.length) {
-        await ctx.reply('💳 No pending manual payments.', {
+        await this.editOrReply(ctx, '💳 No pending manual payments.', {
           ...Markup.inlineKeyboard([
             [Markup.button.callback('🏠 Menu', 'menu')],
           ]),
@@ -2342,13 +2350,13 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       const lines = payments.map(
         (p, i) => `${i + 1}. ${p.user?.email || '?'} — ${p.plan?.name || '?'}`,
       );
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `💳 <b>Pending Payments</b> (${payments.length})\n\n` +
           lines.join('\n'),
         { parse_mode: 'HTML', ...Markup.inlineKeyboard(buttons) },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2357,19 +2365,19 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const admin = await this.requireLinkedUser(ctx);
     if (!admin || !this.isAdmin(admin)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     const idx = parseInt((ctx as any).match[1], 10);
     const payments = this.state(ctx.chat!.id).adminUsers || [];
     const p = payments[idx];
     if (!p) {
-      await ctx.reply('Payment not found.');
+      await this.editOrReply(ctx, 'Payment not found.');
       return;
     }
     try {
       await this.adminService.approvePayment(p.id);
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `✅ Payment approved for <b>${p.user?.email || p.id}</b>!`,
         {
           parse_mode: 'HTML',
@@ -2379,7 +2387,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed to approve'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed to approve'}`);
     }
   }
 
@@ -2388,7 +2396,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user || !this.isAdmin(user)) {
-      await ctx.reply('⛔ Access denied.');
+      await this.editOrReply(ctx, '⛔ Access denied.');
       return;
     }
     try {
@@ -2398,7 +2406,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       });
       const subs: any[] = res.data;
       if (!subs.length) {
-        await ctx.reply('📋 No subscriptions found.', {
+        await this.editOrReply(ctx, '📋 No subscriptions found.', {
           ...Markup.inlineKeyboard([
             [Markup.button.callback('🏠 Menu', 'menu')],
           ]),
@@ -2411,7 +2419,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
           (s, i) =>
             `${i + 1}. ${s.user?.email || '?'} · ${s.plan?.name || '?'} · <b>${s.status}</b>`,
         );
-      await ctx.reply(
+      await this.editOrReply(ctx, 
         `📋 <b>Subscriptions</b> (${res.meta.total} total)\n\n` +
           lines.join('\n'),
         {
@@ -2423,7 +2431,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
         },
       );
     } catch (err: any) {
-      await ctx.reply(`❌ ${err?.message || 'Failed'}`);
+      await this.editOrReply(ctx, `❌ ${err?.message || 'Failed'}`);
     }
   }
 
@@ -2436,7 +2444,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user || user.role !== UserRole.ADMIN) {
-      await ctx.reply('⛔ Admin only.');
+      await this.editOrReply(ctx, '⛔ Admin only.');
       return;
     }
     const plans = await this.subscriptionsService.getPlans();
@@ -2452,7 +2460,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       ),
     ]);
     buttons.push([Markup.button.callback('⬅️ Back', 'adm_subs')]);
-    await ctx.reply(`💎 <b>Subscription Plans</b>\n\n` + lines.join('\n'), {
+    await this.editOrReply(ctx, `💎 <b>Subscription Plans</b>\n\n` + lines.join('\n'), {
       parse_mode: 'HTML',
       ...Markup.inlineKeyboard(buttons),
     });
@@ -2463,14 +2471,14 @@ export class TelegramUpdate implements OnApplicationBootstrap {
     await (ctx as any).answerCbQuery();
     const user = await this.requireLinkedUser(ctx);
     if (!user || user.role !== UserRole.ADMIN) {
-      await ctx.reply('⛔ Admin only.');
+      await this.editOrReply(ctx, '⛔ Admin only.');
       return;
     }
     const idx = parseInt((ctx as any).match[1], 10);
     const plans = this.state(ctx.chat!.id).adminPlans || [];
     const plan = plans[idx];
     if (!plan) {
-      await ctx.reply('Plan not found.');
+      await this.editOrReply(ctx, 'Plan not found.');
       return;
     }
     this.setState(ctx.chat!.id, {
@@ -2478,7 +2486,7 @@ export class TelegramUpdate implements OnApplicationBootstrap {
       focusPlanId: plan.id,
       focusPlanName: plan.name,
     });
-    await ctx.reply(
+    await this.editOrReply(ctx, 
       `✏️ <b>${plan.name}</b>\nCurrent price: <b>$${Number(plan.price).toFixed(2)}</b> / ${plan.billingPeriod}\n\nEnter the new price in USD (e.g. <code>12.99</code>):`,
       {
         parse_mode: 'HTML',
